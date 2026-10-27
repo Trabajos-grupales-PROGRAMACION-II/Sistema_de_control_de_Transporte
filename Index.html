@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi Webapp</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ===== VISTA: LOGIN ===== -->
+<div class="login-wrap" id="view-login">
+  <div class="login">
+    <h1>Iniciar sesión</h1>
+    <p>Ingresa con tu cuenta para continuar.</p>
+    <div id="login-form">
+      <label for="user">Usuario</label>
+      <input id="user" type="text" autocomplete="username" placeholder="admin">
+      <label for="pass">Contraseña</label>
+      <input id="pass" type="password" autocomplete="current-password" placeholder="••••••••">
+      <div class="error" id="login-error" role="alert"></div>
+      <button class="btn block" id="btn-login" type="button">Entrar</button>
+    </div>
+    <div class="hint">Demo: usuario <b>admin</b>, contraseña <b>admin123</b></div>
+  </div>
+</div>
+
+<!-- ===== VISTA: APP (ADMIN) ===== -->
+<div class="app" id="view-app" hidden>
+  <aside class="side">
+    <div class="brand">Mi Webapp</div>
+    <button class="nav" data-section="dashboard" data-admin aria-current="page">Inicio</button>
+    <button class="nav" data-section="users" data-admin>Usuarios</button>
+    <button class="nav" data-section="drivers" data-admin>Choferes</button>
+    <button class="nav" data-section="schedules" data-admin>Horarios</button>
+    <button class="nav" data-section="profile">Mi perfil</button>
+    <button class="nav" data-section="settings" data-admin>Configuración</button>
+    <div class="spacer"></div>
+    <button class="nav" id="btn-logout">Cerrar sesión</button>
+  </aside>
+
+  <main class="main">
+    <div class="top">
+      <h2 id="section-title">Inicio</h2>
+      <span id="top-user" class="empty"></span>
+    </div>
+
+    <section id="sec-dashboard" data-sec>
+      <div class="stats">
+        <div class="stat"><b id="st-units">0</b><span>Unidades</span></div>
+        <div class="stat"><b id="st-drivers">0</b><span>Choferes activos</span></div>
+        <div class="stat"><b id="st-route">0</b><span>En ruta ahora</span></div>
+      </div>
+      <div class="panel">
+        <div class="row">
+          <h3>Mapa en vivo</h3>
+          <div class="tools">
+            <select id="m-day" aria-label="Día"></select>
+            <input id="m-time" type="time" aria-label="Hora">
+            <button class="btn ghost small" id="btn-now" type="button">Hora actual</button>
+          </div>
+        </div>
+        <div id="map"></div>
+        <p class="empty">Las posiciones se calculan según los horarios y la ruta (simulación). Cambia día y hora para ver cómo estará cada unidad.</p>
+      </div>
+      <div class="panel">
+        <h3>Unidades ahora</h3>
+        <div class="scroll"><table>
+          <thead><tr><th>Unidad</th><th>Estado</th><th>Conductor</th><th>Ubicación</th><th>Descanso / mantenimiento</th></tr></thead>
+          <tbody id="units-live"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <div class="row"><h3>Ruta y estaciones</h3><button class="btn ghost small" id="btn-add-station" type="button">Agregar estación en el mapa</button></div>
+        <div class="scroll"><table>
+          <thead><tr><th>Estación</th><th>Min hasta la siguiente</th><th>Parada (min)</th><th></th></tr></thead>
+          <tbody id="stations-body"></tbody>
+        </table></div>
+        <p class="empty" id="cycle-total"></p>
+      </div>
+    </section>
+
+    <section id="sec-users" data-sec hidden>
+      <div class="panel">
+        <div class="row"><h3>Usuarios</h3><button class="btn" id="btn-new" type="button">Nuevo usuario</button></div>
+        <div class="scroll"><table>
+          <thead><tr><th>Nombre</th><th>Tipo</th><th>Detalle</th><th></th></tr></thead>
+          <tbody id="users-body"></tbody>
+        </table></div>
+      </div>
+      <div class="panel" id="form-panel" hidden>
+        <h3>Nuevo usuario</h3>
+        <label for="f-type">Tipo de perfil</label>
+        <select id="f-type">
+          <option value="transport">Unidad de transporte</option>
+          <option value="student">Estudiante</option>
+        </select>
+        <div id="fields-transport">
+          <label for="f-plate">Matrícula</label><input id="f-plate" type="text" placeholder="ABC-1234">
+          <label for="f-model">Modelo</label><input id="f-model" type="text">
+          <label for="f-color">Color</label><input id="f-color" type="text">
+          <label for="f-uphone">Teléfono de la unidad</label><input id="f-uphone" type="tel">
+          <label for="f-driver">Chofer principal</label><select id="f-driver"></select>
+        </div>
+        <div id="fields-student" hidden>
+          <label for="f-sname">Nombre completo</label><input id="f-sname" type="text">
+          <label for="f-sid">Identificación</label><input id="f-sid" type="text">
+          <label for="f-semail">Correo</label><input id="f-semail" type="email">
+        </div>
+        <label for="f-user">Usuario de acceso</label><input id="f-user" type="text" autocomplete="off">
+        <label for="f-pass">Contraseña</label><input id="f-pass" type="password" autocomplete="new-password">
+        <div class="error" id="form-error" role="alert"></div>
+        <div class="row actions">
+          <button class="btn" id="btn-save" type="button">Guardar usuario</button>
+          <button class="btn ghost" id="btn-cancel" type="button">Cancelar</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-drivers" data-sec hidden>
+      <div class="panel">
+        <div class="row"><h3>Choferes</h3><button class="btn" id="btn-new-driver" type="button">Nuevo chofer</button></div>
+        <div class="scroll"><table>
+          <thead><tr><th>Foto</th><th>Nombre</th><th>Cédula</th><th>Teléfono</th><th>Disponibilidad</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="drivers-body"></tbody>
+        </table></div>
+      </div>
+      <div class="panel" id="driver-form" hidden>
+        <h3>Nuevo chofer</h3>
+        <label for="d-photo">Foto</label><input id="d-photo" type="file" accept="image/*">
+        <label for="d-name">Nombre completo</label><input id="d-name" type="text">
+        <label for="d-cedula">Cédula</label><input id="d-cedula" type="text">
+        <label for="d-phone">Teléfono</label><input id="d-phone" type="tel">
+        <label>Días disponibles</label><div class="days" id="d-days"></div>
+        <div class="grid2">
+          <div><label for="d-start">Disponible desde</label><input id="d-start" type="time" value="06:00"></div>
+          <div><label for="d-end">Disponible hasta</label><input id="d-end" type="time" value="18:00"></div>
+        </div>
+        <div class="error" id="driver-error" role="alert"></div>
+        <div class="row actions">
+          <button class="btn" id="btn-save-driver" type="button">Guardar chofer</button>
+          <button class="btn ghost" id="btn-cancel-driver" type="button">Cancelar</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-schedules" data-sec hidden>
+      <div class="panel"><label for="s-unit" style="margin-top:0">Unidad de transporte</label><select id="s-unit"></select></div>
+      <div class="panel">
+        <h3>Turnos de la unidad</h3>
+        <div class="scroll"><table>
+          <thead><tr><th>Día</th><th>Horario</th><th>Chofer</th><th>Descanso (hora · min)</th><th>Mantenimiento (hora · min)</th><th></th></tr></thead>
+          <tbody id="shifts-body"></tbody>
+        </table></div>
+        <p class="empty">Dos turnos el mismo día con choferes distintos forman un cambio de turno. Descanso y mantenimiento tienen una hora fija y una duración: la unidad se detiene en esa ventana y se reactiva al terminar. Puedes editarlos en la tabla (deja la hora vacía para no usarlos).</p>
+      </div>
+      <div class="panel">
+        <h3>Nuevo turno</h3>
+        <div class="grid2">
+          <div><label for="s-day">Día</label><select id="s-day"></select></div>
+          <div><label for="s-driver">Chofer (activo y disponible)</label><select id="s-driver"></select></div>
+          <div><label for="s-start">Inicio</label><input id="s-start" type="time" value="06:00"></div>
+          <div><label for="s-end">Fin</label><input id="s-end" type="time" value="14:00"></div>
+          <div><label for="s-rstart">Descanso: hora de inicio</label><input id="s-rstart" type="time" value="12:00"></div>
+          <div><label for="s-rdur">Descanso: duración (min)</label><input id="s-rdur" type="number" min="0" value="60"></div>
+          <div><label for="s-mstart">Mantenimiento: hora de inicio</label><input id="s-mstart" type="time"></div>
+          <div><label for="s-mdur">Mantenimiento: duración (min)</label><input id="s-mdur" type="number" min="0" value="15"></div>
+        </div>
+        <div class="error" id="shift-error" role="alert"></div>
+        <button class="btn" id="btn-add-shift" type="button">Agregar turno</button>
+      </div>
+    </section>
+
+    <section id="sec-profile" data-sec hidden>
+      <div class="panel">
+        <div class="profile">
+          <div class="avatar" id="avatar"></div>
+          <div>
+            <h3 id="p-name" style="margin:0"></h3>
+            <span class="empty" id="p-role"></span>
+          </div>
+        </div>
+        <dl id="p-details"></dl>
+        <div id="p-extra"></div>
+      </div>
+    </section>
+
+    <section id="sec-settings" data-sec hidden>
+      <div class="panel">
+        <h3>Configuración</h3>
+        <p class="empty">Espacio reservado para las opciones del sistema.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
