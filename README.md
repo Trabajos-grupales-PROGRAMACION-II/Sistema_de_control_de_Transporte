@@ -25,6 +25,9 @@ SistemaTransporte/src
 ├── negocio/    Gestores con las reglas de negocio, cálculos geográficos (Haversine),
 │               estimación de llegada, reportes, reloj simulado y ValidacionException
 └── interfaz/   Main y los menús de consola por módulo y por rol
+ejecutable/
+├── SistemaTransporte.jar   Aplicación ejecutable
+└── Ejecutar.bat            Lanzador para Windows
 docs/
 ├── Informe_Avance2_Grupo11.pdf
 └── diagrama_uml.png
@@ -33,6 +36,13 @@ docs/
 ## Cómo ejecutar
 
 Requiere Java 8 o superior.
+
+**Aplicación ejecutable:** descargar la carpeta `ejecutable/` y:
+
+- En Windows, doble clic en `Ejecutar.bat` (abre la consola con el programa).
+- En cualquier sistema: `java -jar SistemaTransporte.jar` desde esa carpeta.
+
+**Desde el código fuente:**
 
 ```bash
 cd SistemaTransporte
