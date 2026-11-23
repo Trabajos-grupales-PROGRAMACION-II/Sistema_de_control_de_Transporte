@@ -1,0 +1,8 @@
+out/
+bin/
+*.class
+.idea/
+*.iml
+.vscode/
+nbproject/private/
+.DS_Store

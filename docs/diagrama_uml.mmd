@@ -1,0 +1,166 @@
+classDiagram
+    direction TB
+
+    class Usuario {
+        <<abstract>>
+        -String nombres
+        -String apellidos
+        -String correo
+        -String contrasenaCifrada
+        -String telefono
+        -boolean activo
+        -int intentosFallidos
+        -LocalDateTime bloqueadoHasta
+        +getRol()* String
+        +verificarContrasena(String) boolean
+        +registrarIntentoFallido(LocalDateTime) void
+        +estaBloqueado(LocalDateTime) boolean
+    }
+    class Administrador {
+        +getRol() String
+    }
+    class Conductor {
+        -String numeroLicencia
+        -LocalDate vencimientoLicencia
+        +licenciaVigente(LocalDate) boolean
+        +getRol() String
+    }
+    class Pasajero {
+        +getRol() String
+    }
+
+    class Ruta {
+        -String codigo
+        -String nombre
+        -String origen
+        -String destino
+        -LocalTime horaInicio
+        -LocalTime horaFin
+        -List~Parada~ paradas
+        +agregarParada(Parada) void
+        +buscarParada(int) Parada
+        +esValida() boolean
+    }
+    class Parada {
+        -String nombre
+        -int orden
+        -double latitud
+        -double longitud
+    }
+    class Unidad {
+        -String placa
+        -int numeroUnidad
+        -int capacidad
+        -Conductor conductor
+        -Ruta ruta
+        -EstadoUnidad estado
+        -LocalDateTime ultimaSenal
+        +actualizarUbicacion(Ubicacion) void
+        +estaEnOperacion() boolean
+    }
+    class EstadoUnidad {
+        <<enumeration>>
+        DISPONIBLE
+        EN_RECORRIDO
+        SIN_SENAL
+        FUERA_DE_SERVICIO
+    }
+    class Recorrido {
+        -int id
+        -LocalDateTime inicio
+        -LocalDateTime fin
+        -List~Ubicacion~ ubicaciones
+        -double distanciaRecorridaMetros
+        +agregarUbicacion(Ubicacion) void
+        +finalizar(LocalDateTime) void
+        +estaEnCurso() boolean
+        +getDuracionMinutos() double
+    }
+    class Ubicacion {
+        -double latitud
+        -double longitud
+        -LocalDateTime fechaHora
+    }
+    class Anomalia {
+        -int id
+        -TipoAnomalia tipo
+        -LocalDateTime fechaHora
+        -String detalle
+        -boolean atendida
+        +atender() void
+    }
+    class TipoAnomalia {
+        <<enumeration>>
+        DESVIO_RUTA
+        DETENCION_INUSUAL
+    }
+
+    class GestorUsuarios {
+        -List~Usuario~ usuarios
+        -double limiteHorasJornada
+        +iniciarSesion(correo, contrasena) Usuario
+        +registrarUsuario(Usuario) void
+        +cambiarEstado(correo, boolean) void
+        +calcularHorasConducidas(Conductor, List~Recorrido~, LocalDate) double
+        +verificarJornada(Conductor, List~Recorrido~) void
+        +generarReporteJornada(List~Recorrido~) List~ReporteJornada~
+    }
+    class GestorRutasUnidades {
+        -List~Ruta~ rutas
+        -List~Unidad~ unidades
+        +registrarRuta(...) Ruta
+        +eliminarRuta(codigo) void
+        +registrarUnidad(placa, numero, capacidad) Unidad
+        +asignar(placa, Conductor, codigoRuta, LocalDate) void
+        +cambiarServicio(placa, boolean) void
+    }
+    class GestorMonitoreo {
+        -List~Recorrido~ recorridos
+        -List~ObservadorUbicacion~ observadores
+        +iniciarRecorrido(placa) Recorrido
+        +finalizarRecorrido(placa) Recorrido
+        +simularAvance(placa, minutos) int
+        +actualizarEstados() void
+        +obtenerEstadoFlota() List~Unidad~
+    }
+    class GestorLlegadas {
+        +calcularTiempoEstimadoLlegada(placa, orden) EstimacionLlegada
+        +calcularProximasLlegadas(placa) List~EstimacionLlegada~
+        +buscarUnidadMasProxima(ruta, orden) EstimacionLlegada
+    }
+    class ObservadorUbicacion {
+        <<interface>>
+        +ubicacionRegistrada(Recorrido, Ubicacion) void
+    }
+    class GestorAnomalias {
+        -List~Anomalia~ anomalias
+        +ubicacionRegistrada(Recorrido, Ubicacion) void
+        +listarAnomalias(boolean) List~Anomalia~
+        +atenderAnomalia(int) void
+        +generarReportePorUnidad() List~ReporteUnidad~
+    }
+
+    Usuario <|-- Administrador
+    Usuario <|-- Conductor
+    Usuario <|-- Pasajero
+
+    Ruta "1" *-- "2..*" Parada : composición
+    Recorrido "1" *-- "1..*" Ubicacion : composición
+    Unidad "0..1" --> "0..1" Conductor : conducida por
+    Unidad "0..*" --> "0..1" Ruta : cubre
+    Unidad --> EstadoUnidad
+    Recorrido "0..*" --> "1" Unidad : realizado por
+    Recorrido "0..*" --> "1" Conductor
+    Anomalia "0..*" --> "1" Recorrido : ocurre en
+    Anomalia --> TipoAnomalia
+
+    GestorUsuarios "1" o-- "0..*" Usuario : agregación
+    GestorRutasUnidades "1" o-- "0..*" Ruta : agregación
+    GestorRutasUnidades "1" o-- "0..*" Unidad : agregación
+    GestorMonitoreo "1" o-- "0..*" Recorrido : agregación
+    GestorMonitoreo --> GestorRutasUnidades
+    GestorMonitoreo --> GestorUsuarios
+    GestorMonitoreo --> ObservadorUbicacion : notifica
+    GestorLlegadas --> GestorMonitoreo
+    ObservadorUbicacion <|.. GestorAnomalias : implementa
+    GestorAnomalias "1" o-- "0..*" Anomalia : agregación
